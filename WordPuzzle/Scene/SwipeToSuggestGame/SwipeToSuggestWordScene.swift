@@ -15,6 +15,7 @@ class SwipeToSuggestWordScene: SKScene {
     private var wordSlots: [CustomLabelNode] = [] // Slots for the target words
     private var letterNodes: [CustomLabelNode] = [] // Letters at the bottom
     private var currentLetterPath: [CustomLabelNode] = [] // Tracks the user's current swipe path
+    private var swipingTextDisplayLabel: CustomLabelNode!
     private var closeButton: SKSpriteNode!
     private var titleLabel: SKLabelNode!
     private var diamondButton: SKSpriteNode!
@@ -135,6 +136,7 @@ class SwipeToSuggestWordScene: SKScene {
         setupShuffleButton()
         setupDictionaryButton()
         setupExtraWordsButton()
+        configureSwipingTextDisplayLabel()
     }
     
     // MARK: - Configure UI
@@ -193,6 +195,23 @@ class SwipeToSuggestWordScene: SKScene {
         titleLabel.position = CGPoint(x: size.width / 2, y: size.height - 55)
         // Add the close button to the scene
         addChild(titleLabel)
+    }    
+    
+    private func configureSwipingTextDisplayLabel() {
+        swipingTextDisplayLabel = CustomLabelNode(
+            text: "",
+            fontSize: 35,
+            fontColor: .white,
+            backgroundColor: .black,
+            borderColor: .darkGray,
+            cornerRadius: 10
+        )
+        swipingTextDisplayLabel.autoUpdateBackground = true
+        swipingTextDisplayLabel.name = "displaySwipingLettersLabel"
+        swipingTextDisplayLabel.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        swipingTextDisplayLabel.alpha = .zero
+        // Add the close button to the scene
+        addChild(swipingTextDisplayLabel)
     }
     
     private func setupShuffleButton() {
@@ -477,47 +496,76 @@ class SwipeToSuggestWordScene: SKScene {
     }
     
     private func shuffleLetters() {
-        // Step 1: Shuffle the letter nodes array
-        let shuffledNodes = letterNodes.shuffled()
-        // Step 2: Define circular layout parameters
-        let availableWidth = size.width * 0.7 // Subtract left (20px) and right (20px) padding
-        let radius: CGFloat = availableWidth / 3 // Maximum radius based on available width
-        let angleStep = CGFloat.pi * 2 / CGFloat(letterPool.count) // Angle between letters for full circle
-        let startAngle = -CGFloat.pi / 2 // Start at the top of the circle (upside down)
-        // Calculate the center of the circle
-        let bottomCenter = CGPoint(x: size.width / 2, y: size.height * 0.25) // Center of the circle
-        // Step 3: Calculate new positions and animate
-        for (index, node) in shuffledNodes.enumerated() {
-            // Calculate the target angle and position
-            let targetAngle = startAngle + CGFloat(index) * angleStep
-            let newPosition = CGPoint(
-                x: bottomCenter.x + radius * cos(targetAngle),
-                y: bottomCenter.y + radius * sin(targetAngle)
+        // Step 1: Rotate all nodes around the circular path 2 times (fast and smooth, clockwise)
+        let bottomCenter = CGPoint(x: size.width / 2, y: size.height * 0.25) // Circle center
+        let availableWidth = size.width * 0.7 // Account for padding
+        let radius: CGFloat = availableWidth / 3 // Circle radius
+        let angleStep = CGFloat.pi * 2 / CGFloat(letterNodes.count) // Angle between nodes
+        let startAngle = -CGFloat.pi / 2 // Top of the circle
+        
+        // Set initial positions of the nodes around the circle
+        for (index, node) in letterNodes.enumerated() {
+            let initialAngle = startAngle + CGFloat(index) * angleStep
+            node.position = CGPoint(
+                x: bottomCenter.x + radius * cos(initialAngle),
+                y: bottomCenter.y + radius * sin(initialAngle)
             )
-            // Create a circular rotation path animation for two full revolutions
-            let rotationPath = UIBezierPath()
-            let currentAngle = atan2(node.position.y - bottomCenter.y, node.position.x - bottomCenter.x)
-            rotationPath.addArc(
-                withCenter: bottomCenter,
-                radius: radius,
-                startAngle: currentAngle,
-                endAngle: targetAngle + (CGFloat.pi * 4), // Two full rotations
-                clockwise: false
-            )
-            // SKAction to follow the circular path
-            let followPathAction = SKAction.follow(rotationPath.cgPath, asOffset: false, orientToPath: false, duration: 1.0)
-            // SKAction to ensure the node ends at the exact target position
-            let moveToNewPositionAction = SKAction.move(to: newPosition, duration: 0.0)
-            // Combine the actions: follow the path, then snap to the final position
-            let animation = SKAction.sequence([followPathAction, moveToNewPositionAction])
-            animation.timingMode = .easeInEaseOut
-            
-            // Run the animation
-            node.run(animation)
         }
         
-        // Step 4: Update the letterNodes array to reflect the new order
-        letterNodes = shuffledNodes
+        // Animate clockwise rotation for all nodes
+        let rotateAction = SKAction.customAction(withDuration: 1.0) { _, elapsedTime in
+            let progress = elapsedTime / 1.0 // Duration is 1 second
+            let rotationAngle = progress * CGFloat.pi * 2 // full revolutions (clockwise)
+            for (index, node) in self.letterNodes.enumerated() {
+                let baseAngle = startAngle + CGFloat(index) * angleStep
+                let currentAngle = baseAngle - rotationAngle // Subtract to rotate clockwise
+                node.position = CGPoint(
+                    x: bottomCenter.x + radius * cos(currentAngle),
+                    y: bottomCenter.y + radius * sin(currentAngle)
+                )
+            }
+        }
+        
+        // Run rotation animation for all nodes
+        let waitAction = SKAction.wait(forDuration: 1.0) // Delay to start the next step
+        let rotationSequence = SKAction.sequence([rotateAction, waitAction])
+        for node in letterNodes {
+            node.run(rotationSequence)
+        }
+        
+        // Proceed to next steps after rotation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            // Step 2: Move all nodes to the center smoothly
+            let moveToCenterAction = SKAction.move(to: bottomCenter, duration: 0.5)
+            moveToCenterAction.timingMode = .easeInEaseOut
+            
+            for node in self.letterNodes {
+                node.run(moveToCenterAction)
+            }
+            
+            // Wait for move-to-center to finish
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                // Step 3: Shuffle the nodes
+                let shuffledNodes = self.letterNodes.shuffled()
+                
+                // Step 4: Relocate nodes to circular path in shuffled order
+                for (index, node) in shuffledNodes.enumerated() {
+                    let newAngle = startAngle + CGFloat(index) * angleStep
+                    let newPosition = CGPoint(
+                        x: bottomCenter.x + radius * cos(newAngle),
+                        y: bottomCenter.y + radius * sin(newAngle)
+                    )
+                    
+                    // Animate movement to new position
+                    let moveToNewPositionAction = SKAction.move(to: newPosition, duration: 0.5)
+                    moveToNewPositionAction.timingMode = .easeInEaseOut
+                    node.run(moveToNewPositionAction)
+                }
+                
+                // Update the letterNodes array to reflect the new order
+                self.letterNodes = shuffledNodes
+            }
+        }
     }
     
     private func showHint() {
@@ -684,8 +732,22 @@ class SwipeToSuggestWordScene: SKScene {
             let squareName = "slotSquare_\(wordIndex)_\(charIndex)"
             if let label = childNode(withName: squareName) as? CustomLabelNode {
                 label.text = String(char) // Set the letter
-                label.labelNode.alpha = 0 // Start with alpha 0
-                label.labelNode.run(SKAction.fadeIn(withDuration: 0.3)) // Animate fade-in
+                
+                // Set initial scale to zero for the scaling effect
+                label.labelNode.setScale(0)
+                
+                // Create a scale-up animation
+                let scaleUpAction = SKAction.scale(to: 1.0, duration: 0.3) // Scale to normal size over 0.3 seconds
+                scaleUpAction.timingMode = .easeInEaseOut // Smooth the animation
+                
+                // Add a delay based on the character index for ordered animation
+                let delay = SKAction.wait(forDuration: Double(charIndex) * 0.1)
+                
+                // Sequence the delay and scale-up actions
+                let sequence = SKAction.sequence([delay, scaleUpAction])
+                
+                // Run the animation
+                label.labelNode.run(sequence)
             }
         }
     }
@@ -695,22 +757,34 @@ class SwipeToSuggestWordScene: SKScene {
     private func checkWordIsFoundNowOrAlreadyFounded() {
         // Create a word from letter path
         let formedWord = currentLetterPath.map { $0.text! }.joined()
+        var labelColor: UIColor = .black
         // If the word has already been guessed, show the message
         if guessedWords.contains(formedWord) {
             showShortMessage(text: "You've already guessed that word.")
-            
+            labelColor = .yellow
         // If targetWords contains the guessed word and isn't guessed before
         } else if targetWords.contains(formedWord), !guessedWords.contains(formedWord) {
             guessedWords.insert(formedWord)
             fillWordSlot(formedWord)
             isWordFound = true
-            
+            labelColor = .green
         // If extraWords contains the guessed word and isn't guessed before as extra
         } else if extraWords.contains(formedWord), !guessedExtraWords.contains(formedWord) {
             guessedExtraWords.insert(formedWord)
             showShortMessage(text: "Well done, you got 1 diamond.")
             diamonds += 1
             diamondLabel.text = "\(diamonds)"
+            labelColor = .yellow
+        } else {
+            labelColor = .red
+        }
+        
+        // Remove label
+        swipingTextDisplayLabel.backgroundColor = labelColor
+        swipingTextDisplayLabel.run(SKAction.fadeOut(withDuration: 0.3)) { [weak self] in
+            guard let self else { return }
+            swipingTextDisplayLabel.text = ""
+            swipingTextDisplayLabel.backgroundColor = .black
         }
     }
     
@@ -782,6 +856,8 @@ class SwipeToSuggestWordScene: SKScene {
                 currentLinePath = CGMutablePath() // Start a new path
                 currentLinePath.move(to: touchedNode.center) // Start the path at the touch location
                 lastTouchLocation = touchedNode.center // Set the first touch location
+                swipingTextDisplayLabel.text = touchedNode.text
+                swipingTextDisplayLabel.run(SKAction.fadeIn(withDuration: 0.3))
             }
             break
         }
@@ -799,6 +875,9 @@ class SwipeToSuggestWordScene: SKScene {
                 // Apply a scale and highlight effect on the selected letter
                 letterNode.run(SKAction.scale(to: 1.2, duration: 0.1))
                 letterNode.fontColor = .yellow
+                // Show letters in label
+                swipingTextDisplayLabel.alpha = 1.0
+                swipingTextDisplayLabel.text = currentLetterPath.map { $0.text! }.joined()
             }
         }
         

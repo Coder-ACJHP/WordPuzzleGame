@@ -14,14 +14,22 @@ class CustomLabelNode: SKNode {
     private var cornerRadius: CGFloat = 10
     public let labelNode: SKLabelNode
     
+    public var autoUpdateBackground: Bool = false
+    
     public var text: String? {
         didSet {
             labelNode.text = text
+            if autoUpdateBackground {
+                updateBackgroundSize()
+            }
         }
     }
     public var fontSize: CGFloat = 30 {
         didSet {
             labelNode.fontSize = fontSize
+            if autoUpdateBackground {
+                updateBackgroundSize()
+            }
         }
     }
     public var fontColor: UIColor = .white {
@@ -57,6 +65,12 @@ class CustomLabelNode: SKNode {
     public var borderLineWidth: CGFloat = 2 {
         didSet {
             backgroundNode.lineWidth = borderLineWidth
+        }
+    }
+    
+    override var alpha: CGFloat {
+        didSet {
+            children.forEach({ $0.alpha = alpha })
         }
     }
 
@@ -114,9 +128,41 @@ class CustomLabelNode: SKNode {
         // Add nodes to the parent
         addChild(backgroundNode)
         addChild(labelNode)
+        
+        if autoUpdateBackground {
+            updateBackgroundSize()            
+        }
     }
 
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    // Function to update background size to fit the label size
+     private func updateBackgroundSize() {
+         // Calculate the width and height of the labelNode based on its text and font size
+         let labelWidth = labelNode.frame.width
+         let labelHeight = labelNode.frame.height
+         
+         // Update the backgroundNode size
+         let padding: CGFloat = 25 // Optional padding around the text
+         
+         let backgroundWidth = labelWidth + padding
+         let backgroundHeight = labelHeight + padding
+         
+         // Adjust the backgroundNode shape with a new path
+         let path = CGPath(
+             roundedRect: CGRect(
+                 x: -backgroundWidth / 2,
+                 y: -backgroundHeight / 2,
+                 width: backgroundWidth,
+                 height: backgroundHeight
+             ),
+             cornerWidth: cornerRadius,
+             cornerHeight: cornerRadius,
+             transform: nil
+         )
+         
+         backgroundNode.path = path
+     }
 }
