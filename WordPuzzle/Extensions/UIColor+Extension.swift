@@ -10,6 +10,8 @@ import UIKit
 
 extension UIColor {
     static let appLightGray = UIColor(red: 245/255, green: 245/255, blue: 245/255, alpha: 1.0)
+    static let appBlue = UIColor(red: 0.1411764771, green: 0.3960784376, blue: 0.5647059083, alpha: 1)
+    static let appDarkerBlue = UIColor(hexString: "#132F52")
     
     convenience init(hexString: String) {
         let hex = hexString.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)

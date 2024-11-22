@@ -17,32 +17,37 @@ class NavigationManager {
     func navigateToSwipeGameScene() {
         let sceneSize = UIScreen.main.bounds.size
         let scene = SwipeToSuggestWordScene(size: sceneSize)
-        scene.scaleMode = .resizeFill
+        scene.scaleMode = .aspectFit
         let transition = SKTransition.doorsOpenHorizontal(withDuration: 1.0)
-        self.skView?.presentScene(scene, transition: transition)
+        DispatchQueue.main.async {
+            self.skView?.presentScene(scene, transition: transition)
+        }
     }
     
     func navigateToFillGameScene() {
         let sceneSize = UIScreen.main.bounds.size
         let scene = FillInTheBlankScene(size: sceneSize)
-        scene.scaleMode = .resizeFill
+        scene.scaleMode = .aspectFit
         let transition = SKTransition.doorsOpenHorizontal(withDuration: 1.0)
-        self.skView?.presentScene(scene, transition: transition)
+        DispatchQueue.main.async {
+            self.skView?.presentScene(scene, transition: transition)
+        }
     }
     
     func navigateToMenuScene() {
         let sceneSize = UIScreen.main.bounds.size
         let scene = MenuScene(size: sceneSize)
-        scene.scaleMode = .resizeFill
-        let transition = SKTransition.doorsOpenHorizontal(withDuration: 1.0)
-        self.skView?.presentScene(scene, transition: transition)
+        scene.scaleMode = .aspectFit
+        self.skView?.presentScene(scene)
     }
     
     func returnToMenuScene() {
         let sceneSize = UIScreen.main.bounds.size
         let scene = MenuScene(size: sceneSize)
-        scene.scaleMode = .resizeFill
+        scene.scaleMode = .aspectFit
         let transition = SKTransition.doorsCloseHorizontal(withDuration: 1.0)
-        self.skView?.presentScene(scene, transition: transition)
+        DispatchQueue.main.async {
+            self.skView?.presentScene(scene, transition: transition)
+        }
     }
 }

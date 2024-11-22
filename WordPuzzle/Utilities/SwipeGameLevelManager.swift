@@ -13,7 +13,7 @@ class SwipeGameLevelManager {
     
     private init() {} // Prevent direct instantiation
     
-    private let uncorrectedLevels: [SwipeGameLevel] = [
+    private let levels: [SwipeGameLevel] = [
         SwipeGameLevel(targetWords: ["BEAR", "EAR", "ARE", "BAR"], letters: "BEAR", extraWords: ["BRA", "REB"]),
         SwipeGameLevel(targetWords: ["CHAIR", "AIR", "ARC", "CHAR"], letters: "CHAIR", extraWords: ["RICH", "RAH"]),
         SwipeGameLevel(targetWords: ["STORM", "MOST", "SORT", "MORT"], letters: "STORM", extraWords: ["TORS", "ROST"]),
@@ -56,25 +56,75 @@ class SwipeGameLevelManager {
         SwipeGameLevel(targetWords: ["INSURANCE", "INSURE", "ACNE", "CASE", "NICE", "RUNE"], letters: "INSURANCE", extraWords: ["RUN", "SIN", "CURE", "CAN"])
     ]
     
-    func getLevels() -> Array<SwipeGameLevel> {
-        validateLevels(levels: uncorrectedLevels)
+    func getLevel(forIndex index: Int) -> SwipeGameLevel {
+        guard isValidLevel(index: index), !isLastLevel(index: index) else {
+            return levels.first!
+        }
+        var unvalidatedLevel = levels[index]
+        correctInvalidLevel(level: &unvalidatedLevel)
+        return unvalidatedLevel
     }
     
-    // Function to validate letters for each level
-    private func validateLevels(levels: [SwipeGameLevel]) -> [SwipeGameLevel] {
-        var correctedLevels = [SwipeGameLevel]()
-        for var level in levels {
-            // Collect the letters from targetWords and compare with letters
-            let requiredLetters = Set(level.targetWords.filter({ LanguageManager.shared.isEnglish(word: $0) }).joined())
-            let providedLetters = Set(level.letters)
+    func isValidLevel(index: Int) -> Bool {
+        index <= levels.count - 1
+    }
+    
+    func isLastLevel(index: Int) -> Bool {
+        index == levels.count - 1
+    }
 
-            if !requiredLetters.isSubset(of: providedLetters) {
-                // Fix letters to include all required letters
-                let missingLetters = requiredLetters.subtracting(providedLetters)
-                level.letters += String(missingLetters)
-            }
-            correctedLevels.append(level)
+    func validateLevels(levels: [SwipeGameLevel]) -> [SwipeGameLevel] {
+        return levels.map { level in
+            var correctedLevel = level
+            correctInvalidLevel(level: &correctedLevel)
+            return correctedLevel
         }
-        return correctedLevels
+    }
+
+    private func correctInvalidLevel(level: inout SwipeGameLevel) {
+        // Step 1: Calculate required letter counts using targetWords
+        var maxLetterCounts: [Character: Int] = [:]
+        
+        for word in level.targetWords {
+            // Calculate frequency of each letter for the current word
+            var wordLetterCounts: [Character: Int] = [:]
+            for letter in word {
+                wordLetterCounts[letter, default: 0] += 1
+            }
+            // Keep the maximum occurrences of each letter across all words
+            for (letter, count) in wordLetterCounts {
+                maxLetterCounts[letter] = max(maxLetterCounts[letter, default: 0], count)
+            }
+        }
+        
+        // Step 2: Calculate available letter counts in the provided `letters`
+        var availableLetterCounts: [Character: Int] = [:]
+        for letter in level.letters {
+            availableLetterCounts[letter, default: 0] += 1
+        }
+        
+        // Step 3: Add missing letters to the `letters`
+        var correctedLetters = Array(level.letters)
+        for (letter, requiredCount) in maxLetterCounts {
+            let availableCount = availableLetterCounts[letter, default: 0]
+            if availableCount < requiredCount {
+                let missingCount = requiredCount - availableCount
+                correctedLetters.append(contentsOf: Array(repeating: letter, count: missingCount))
+            }
+        }
+        
+        // Step 4: Remove extra letters from the `letters`
+        var tempRequiredLetterCounts = maxLetterCounts // Temporary tracker for required letters
+        correctedLetters = correctedLetters.filter { letter in
+            if let requiredCount = tempRequiredLetterCounts[letter], requiredCount > 0 {
+                tempRequiredLetterCounts[letter]! -= 1
+                return true // Keep the letter
+            } else {
+                return false // Remove the letter
+            }
+        }
+        
+        // Step 5: Update the level with corrected letters
+        level.letters = String(correctedLetters)
     }
 }

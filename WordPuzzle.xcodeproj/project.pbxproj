@@ -29,6 +29,12 @@
 		F24D5D362CEFA295002B5F62 /* SwipeGameLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24D5D332CEFA294002B5F62 /* SwipeGameLevel.swift */; };
 		F24D5D372CEFA295002B5F62 /* SwipeGameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24D5D342CEFA294002B5F62 /* SwipeGameState.swift */; };
 		F24D5D382CEFA295002B5F62 /* FillGameLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24D5D352CEFA294002B5F62 /* FillGameLevel.swift */; };
+		F2E9EB732CF06067005D410B /* BannerRibbonNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E9EB722CF06067005D410B /* BannerRibbonNode.swift */; };
+		F2E9EB772CF07047005D410B /* ShineParticle.sks in Resources */ = {isa = PBXBuildFile; fileRef = F2E9EB752CF07047005D410B /* ShineParticle.sks */; };
+		F2E9EB782CF07047005D410B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F2E9EB762CF07047005D410B /* Assets.xcassets */; };
+		F2E9EB7A2CF07925005D410B /* DiamondParticle.sks in Resources */ = {isa = PBXBuildFile; fileRef = F2E9EB792CF07925005D410B /* DiamondParticle.sks */; };
+		F2E9EB7C2CF08B9E005D410B /* SwipeToSuggestWordScene+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E9EB7B2CF08B9E005D410B /* SwipeToSuggestWordScene+Extension.swift */; };
+		F2E9EB7E2CF0BFC8005D410B /* BokehParticle.sks in Resources */ = {isa = PBXBuildFile; fileRef = F2E9EB7D2CF0BFC8005D410B /* BokehParticle.sks */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +61,12 @@
 		F24D5D332CEFA294002B5F62 /* SwipeGameLevel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SwipeGameLevel.swift; sourceTree = "<group>"; };
 		F24D5D342CEFA294002B5F62 /* SwipeGameState.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SwipeGameState.swift; sourceTree = "<group>"; };
 		F24D5D352CEFA294002B5F62 /* FillGameLevel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FillGameLevel.swift; sourceTree = "<group>"; };
+		F2E9EB722CF06067005D410B /* BannerRibbonNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerRibbonNode.swift; sourceTree = "<group>"; };
+		F2E9EB752CF07047005D410B /* ShineParticle.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = ShineParticle.sks; sourceTree = "<group>"; };
+		F2E9EB762CF07047005D410B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F2E9EB792CF07925005D410B /* DiamondParticle.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = DiamondParticle.sks; sourceTree = "<group>"; };
+		F2E9EB7B2CF08B9E005D410B /* SwipeToSuggestWordScene+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SwipeToSuggestWordScene+Extension.swift"; sourceTree = "<group>"; };
+		F2E9EB7D2CF0BFC8005D410B /* BokehParticle.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = BokehParticle.sks; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,7 +124,7 @@
 			isa = PBXGroup;
 			children = (
 				F24D5D2F2CEFA239002B5F62 /* Paywall */,
-				F24D5D2C2CEFA21A002B5F62 /* MainMenu */,
+				F24D5D2C2CEFA21A002B5F62 /* MenuScene */,
 				F24D5D292CEFA1FE002B5F62 /* SwipeToSuggestGame */,
 				F24D5D262CEFA1E8002B5F62 /* FillTheBlankGame */,
 			);
@@ -130,6 +142,7 @@
 		F24D5D012CEFA0B5002B5F62 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				F2E9EB742CF07001005D410B /* Emitters */,
 				F24D5CF42CEF9E55002B5F62 /* Assets.xcassets */,
 			);
 			path = Resources;
@@ -171,6 +184,7 @@
 				F24D5D212CEFA1D7002B5F62 /* CustomDictionaryPopupNode.swift */,
 				F24D5D202CEFA1D7002B5F62 /* CustomLabelNode.swift */,
 				F24D5D1E2CEFA1D7002B5F62 /* CustomPopupNode.swift */,
+				F2E9EB722CF06067005D410B /* BannerRibbonNode.swift */,
 			);
 			path = UIComponents;
 			sourceTree = "<group>";
@@ -187,16 +201,17 @@
 			isa = PBXGroup;
 			children = (
 				F24D5D2A2CEFA20E002B5F62 /* SwipeToSuggestWordScene.swift */,
+				F2E9EB7B2CF08B9E005D410B /* SwipeToSuggestWordScene+Extension.swift */,
 			);
 			path = SwipeToSuggestGame;
 			sourceTree = "<group>";
 		};
-		F24D5D2C2CEFA21A002B5F62 /* MainMenu */ = {
+		F24D5D2C2CEFA21A002B5F62 /* MenuScene */ = {
 			isa = PBXGroup;
 			children = (
 				F24D5D2D2CEFA22B002B5F62 /* MenuScene.swift */,
 			);
-			path = MainMenu;
+			path = MenuScene;
 			sourceTree = "<group>";
 		};
 		F24D5D2F2CEFA239002B5F62 /* Paywall */ = {
@@ -215,6 +230,17 @@
 				F24D5D342CEFA294002B5F62 /* SwipeGameState.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		F2E9EB742CF07001005D410B /* Emitters */ = {
+			isa = PBXGroup;
+			children = (
+				F2E9EB752CF07047005D410B /* ShineParticle.sks */,
+				F2E9EB792CF07925005D410B /* DiamondParticle.sks */,
+				F2E9EB7D2CF0BFC8005D410B /* BokehParticle.sks */,
+				F2E9EB762CF07047005D410B /* Assets.xcassets */,
+			);
+			path = Emitters;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -276,7 +302,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				F24D5CF52CEF9E55002B5F62 /* Assets.xcassets in Resources */,
+				F2E9EB7E2CF0BFC8005D410B /* BokehParticle.sks in Resources */,
 				F24D5CF82CEF9E55002B5F62 /* LaunchScreen.storyboard in Resources */,
+				F2E9EB782CF07047005D410B /* Assets.xcassets in Resources */,
+				F2E9EB772CF07047005D410B /* ShineParticle.sks in Resources */,
+				F2E9EB7A2CF07925005D410B /* DiamondParticle.sks in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -296,8 +326,10 @@
 				F24D5D0F2CEFA181002B5F62 /* NavigationManager.swift in Sources */,
 				F24D5D282CEFA1F5002B5F62 /* FillInTheBlankScene.swift in Sources */,
 				F24D5D312CEFA242002B5F62 /* PaywallOverlay.swift in Sources */,
+				F2E9EB7C2CF08B9E005D410B /* SwipeToSuggestWordScene+Extension.swift in Sources */,
 				F24D5D072CEFA142002B5F62 /* NSNotificationName+Extension.swift in Sources */,
 				F24D5D232CEFA1D7002B5F62 /* CustomButtonNode.swift in Sources */,
+				F2E9EB732CF06067005D410B /* BannerRibbonNode.swift in Sources */,
 				F24D5D372CEFA295002B5F62 /* SwipeGameState.swift in Sources */,
 				F24D5CE82CEF9E54002B5F62 /* AppDelegate.swift in Sources */,
 				F24D5D082CEFA142002B5F62 /* UIColor+Extension.swift in Sources */,
@@ -455,6 +487,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = "";
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
@@ -484,6 +517,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = "";
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";

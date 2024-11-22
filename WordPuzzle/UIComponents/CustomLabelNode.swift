@@ -89,6 +89,7 @@ class CustomLabelNode: SKNode {
         self.text = text
         self.fontSize = fontSize
         self.fontColor = fontColor
+        self.fontName = fontName
         self.backgroundColor = backgroundColor
         self.borderColor = borderColor
         self.borderLineWidth = borderLineWidth

@@ -5,51 +5,54 @@
 //  Created by Coder ACJHP on 19.11.2024.
 //
 
-import Foundation
 import UIKit
 import SpriteKit
 
 class SwipeToSuggestWordScene: SKScene {
-    
     // UI Elements
-    private var wordSlots: [CustomLabelNode] = [] // Slots for the target words
-    private var letterNodes: [CustomLabelNode] = [] // Letters at the bottom
-    private var currentLetterPath: [CustomLabelNode] = [] // Tracks the user's current swipe path
-    private var swipingTextDisplayLabel: CustomLabelNode!
-    private var closeButton: SKSpriteNode!
-    private var titleLabel: SKLabelNode!
-    private var diamondButton: SKSpriteNode!
-    private var diamondLabel: SKLabelNode!
-    private var dictionaryButton: SKSpriteNode!
-    private var extraWordsButton: SKSpriteNode!
-    private var shuffleButton: SKSpriteNode!
-    private var hintButton: SKSpriteNode!
+    internal var wordSlots: [CustomLabelNode] = [] // Slots for the target words
+    internal var letterNodes: [CustomLabelNode] = [] // Letters at the bottom
+    internal var currentLetterPath: [CustomLabelNode] = [] // Tracks the user's current swipe path
+    internal var swipingTextDisplayLabel: CustomLabelNode!
+    internal var bannerRibbon: BannerRibbonNode!
+    internal var closeButton: SKSpriteNode!
+    internal var titleLabel: SKLabelNode!
+    internal var diamondButton: SKSpriteNode!
+    internal var diamondLabel: SKLabelNode!
+    internal var dictionaryButton: SKSpriteNode!
+    internal var extraWordsButton: SKSpriteNode!
+    internal var shuffleButton: SKSpriteNode!
+    internal var hintButton: SKSpriteNode!
     
-    private var lastTouchLocation: CGPoint?
-    private var currentLinePath: CGMutablePath!
-    private var swipeLine = SKShapeNode()
+    internal var lastTouchLocation: CGPoint?
+    internal var currentLinePath: CGMutablePath!
+    internal var swipeLine = SKShapeNode()
+    internal var swipeLineColor = UIColor.white
     
-    // Game State
-    private var targetWords: [String] = [] // Words for the current level
-    private var guessedWords: Set<String> = [] // Words guessed by the player
-    private var extraWords: Set<String> = [] // Words guessed by the player but level doesnt contains it
-    private var guessedExtraWords: Set<String> = [] // Words guessed by the player but level doesnt contains it
-    private var letterPool: String = "" // Pool of letters to display
-    private var isWordFound: Bool = false // Used for animation
-    private var hintedLettersList: Array<String> = []
+    // Game State vars
+    internal var targetWords: [String] = [] // Words for the current level
+    internal var guessedWords: Set<String> = [] // Words guessed by the player
+    internal var extraWords: Set<String> = [] // Words guessed by the player but level doesnt contains it
+    internal var guessedExtraWords: Set<String> = [] // Words guessed by the player but level doesnt contains it
+    internal var letterPool: String = "" // Pool of letters to display
+    internal var isWordFound: Bool = false // Used for animation
+    internal var hintedLettersList: Array<String> = []
+    internal var longestWordInCurrentLevel: String = ""
     // Level Data
-    private var currentLevel: Int = 1 {
+    internal var currentLevel: Int = 1 {
         didSet { minRequiredDiamonds = currentLevel }
     }
     // Diamond count for each hint changes based on levels
-    private var minRequiredDiamonds: Int = .zero
-    private var diamonds: Int = .zero
-    private let levels = SwipeGameLevelManager.shared.getLevels()
-    private let rowCount = 6
-    private let columnCount = 7
+    internal var minRequiredDiamonds: Int = .zero
+    internal var diamonds: Int = .zero
+    internal let rowCount = 6
+    internal let columnCount = 7
+    internal let levelsManger = SwipeGameLevelManager.shared
     // Game state update variables
-    private let notificationCenter = NotificationCenter.default
+    internal let notificationCenter = NotificationCenter.default
         
+    // MARK: - Lifecycle
+    
     override func didMove(to view: SKView) {
         super.didMove(to: view)
         loadLastGameData()
@@ -77,69 +80,27 @@ class SwipeToSuggestWordScene: SKScene {
         self.removeAllChildren()
         // Remove all actions
         self.removeAllActions()
+        // Remove it self
+        self.removeFromParent()
     }
     
-    deinit {
-        
-    }
-
-    @objc func updateGameStateInDatabase() {
-        saveGameData()
-    }
+    // MARK: - Configure ui components
     
-    func loadLevel(_ level: Int, fromDB: Bool = false) {
-        guard level > 0 && level - 1 < levels.count else {
-            showPopup(
-                withTitle: "Error",
-                message: "Invalid level. Please restart the game.",
-                buttonTitle: "Dismiss",
-                completion: { [weak self] in self?.dismissGameScene() }
+    private func configureBackground() {
+        let gradientTexture = SKTexture(
+            vectorNoiseWithSmoothness: 1.0,
+            size: CGSize(
+                width: frame.width / 2,
+                height: frame.height / 2
             )
-            return
-        }
-        
-        let levelData = levels[level - 1]
-        guard !levelData.targetWords.isEmpty else {
-            showPopup(
-                withTitle: "No Words",
-                message: "This level has no target words. Skipping.",
-                buttonTitle: "Next Level",
-                completion: { [weak self] in self?.loadLevel(level + 1) }
-            )
-            return
-        }
-        
-        // If loading from the scratch release all old data
-        if !fromDB {
-            extraWords = []
-            guessedExtraWords = []
-            guessedWords = []
-            hintedLettersList = []
-            targetWords = []
-            letterPool = ""
-            wordSlots.removeAll()
-            letterNodes.removeAll()
-            currentLetterPath.removeAll()
-        }
-        
-        targetWords = levelData.targetWords
-        extraWords = Set(levelData.extraWords)
-        letterPool = levelData.letters
-        
-        configureDiamondLabel()
-        configureTitleLabel()
-        setupCloseButton()
-        setupWordSlots()
-        setupLetterNodes()
-        configureSwipeLine()
-        setupHintButton()
-        setupShuffleButton()
-        setupDictionaryButton()
-        setupExtraWordsButton()
-        configureSwipingTextDisplayLabel()
+        )
+        let background = SKSpriteNode(texture: gradientTexture)
+        background.position = CGPoint(x: frame.midX, y: frame.midY)
+        background.size = frame.size
+        background.zPosition = -1
+        background.name = "backgroundNode"
+        addChild(background)
     }
-    
-    // MARK: - Configure UI
     
     private func configureSwipeLine() {
         swipeLine.strokeColor = .white
@@ -195,23 +156,6 @@ class SwipeToSuggestWordScene: SKScene {
         titleLabel.position = CGPoint(x: size.width / 2, y: size.height - 55)
         // Add the close button to the scene
         addChild(titleLabel)
-    }    
-    
-    private func configureSwipingTextDisplayLabel() {
-        swipingTextDisplayLabel = CustomLabelNode(
-            text: "",
-            fontSize: 35,
-            fontColor: .white,
-            backgroundColor: .black,
-            borderColor: .darkGray,
-            cornerRadius: 10
-        )
-        swipingTextDisplayLabel.autoUpdateBackground = true
-        swipingTextDisplayLabel.name = "displaySwipingLettersLabel"
-        swipingTextDisplayLabel.position = CGPoint(x: size.width / 2, y: size.height / 2)
-        swipingTextDisplayLabel.alpha = .zero
-        // Add the close button to the scene
-        addChild(swipingTextDisplayLabel)
     }
     
     private func setupShuffleButton() {
@@ -272,6 +216,33 @@ class SwipeToSuggestWordScene: SKScene {
         shakeHintButtonForever()
     }
     
+    private func configureSwipingTextDisplayLabel() {
+        swipingTextDisplayLabel = CustomLabelNode(
+            text: "",
+            fontSize: 35,
+            fontColor: .white,
+            backgroundColor: .appDarkerBlue,
+            borderColor: .white,
+            cornerRadius: 10
+        )
+        swipingTextDisplayLabel.autoUpdateBackground = true
+        swipingTextDisplayLabel.name = "displaySwipingLettersLabel"
+        swipingTextDisplayLabel.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        swipingTextDisplayLabel.alpha = .zero
+        // Add the close button to the scene
+        addChild(swipingTextDisplayLabel)
+    }
+    
+    private func configureBannerRibbon() {
+        bannerRibbon = BannerRibbonNode(title: "GREAT")
+        bannerRibbon.position = CGPoint(x: size.width / 2, y: size.height / 2 - 15)
+        bannerRibbon.name = "bannerRibbon"
+        // Add the shuffle button to the scene
+        addChild(bannerRibbon)
+        // Hide with scale by default
+        bannerRibbon.setScale(.zero)
+    }
+    
     private func setupWordSlots() {
         let topMargin: CGFloat = size.height - 110 // Position the word slots near the top
         let spacing: CGFloat = 10 // Spacing between squares
@@ -291,8 +262,8 @@ class SwipeToSuggestWordScene: SKScene {
                     text: "",
                     fontSize: 35,
                     fontColor: .white,
-                    backgroundColor: .darkGray,
-                    borderColor: .darkGray,
+                    backgroundColor: #colorLiteral(red: 0, green: 0.3285208941, blue: 0.5748849511, alpha: 0.08979201159),
+                    borderColor: #colorLiteral(red: 0, green: 0.3285208941, blue: 0.5748849511, alpha: 0.08979201159),
                     cornerRadius: 8
                 )
                 label.position = CGPoint(x: startX + CGFloat(charIndex) * (squareSize + spacing), y: yPosition)
@@ -312,10 +283,11 @@ class SwipeToSuggestWordScene: SKScene {
                 
                 let label = CustomLabelNode(
                     text: "",
-                    fontSize: 35,
+                    fontSize: 32,
                     fontColor: .white,
-                    backgroundColor: .black,
-                    borderColor: .white,
+                    fontName: "AvenirNext-DemiBold",
+                    backgroundColor: .appBlue,
+                    borderColor: .appBlue,
                     cornerRadius: 8
                 )
                 label.position = CGPoint(x: startX + CGFloat(charIndex) * (squareSize + spacing), y: yPosition)
@@ -349,8 +321,8 @@ class SwipeToSuggestWordScene: SKScene {
                 text: String(char),
                 fontSize: 35,
                 fontColor: .white,
-                fontName: "AvenirNext-Bold",
-                backgroundColor: .black,
+                fontName: "AvenirNext-DemiBold",
+                backgroundColor: .appBlue,
                 borderColor: .white,
                 cornerRadius: 8
             )
@@ -365,137 +337,13 @@ class SwipeToSuggestWordScene: SKScene {
     
     // MARK: - Game functionalities
     
-    private func showShortMessage(text: String) {
-        // Create the label for the message
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.alignment = .center
-        paragraphStyle.lineSpacing = 1.5
-        let shadow = NSShadow()
-        shadow.shadowColor = UIColor.black
-        shadow.shadowBlurRadius = 10
-        shadow.shadowOffset = .zero
-        let attrs: [NSAttributedString.Key : Any] = [
-            .foregroundColor : UIColor.white,
-            .font : UIFont(name: "AvenirNext-Regular", size: 18) ?? .systemFont(ofSize: 18),
-            .paragraphStyle : paragraphStyle,
-            .shadow : shadow
-        ]
-        let attributedString = NSMutableAttributedString(string: text)
-        attributedString.addAttributes(attrs, range: NSRange(location: 0, length: text.count))
-        let messageLabel = SKLabelNode(attributedText: attributedString)
-        messageLabel.position = CGPoint(x: size.width / 2, y: size.height / 2)
-        messageLabel.horizontalAlignmentMode = .center
-        messageLabel.verticalAlignmentMode = .center
-        messageLabel.numberOfLines = 0
-        messageLabel.preferredMaxLayoutWidth = self.size.width * 0.7
-        messageLabel.alpha = 0
-        addChild(messageLabel)
-        
-        // Animate the message label to fade in and then out
-        let fadeIn = SKAction.fadeIn(withDuration: 0.2)
-        let wait = SKAction.wait(forDuration: 0.6)
-        let fadeOut = SKAction.fadeOut(withDuration: 0.2)
-        
-        let sequence = SKAction.sequence([fadeIn, wait, fadeOut])
-        
-        // Run the sequence and then remove the message label
-        messageLabel.run(sequence) {
-            messageLabel.removeFromParent() // Remove the label after the animation
-        }
-    }
     
-    private func shakeHintButtonForever() {
-        // Define keyframes for the rotation angles
-        let keyframeRotations: [CGFloat] = [-0.15, 0.15, -0.07, 0.07, -0.05, 0.05, 0] // Rotation angles in radians
-        let keyframeDurations: [TimeInterval] = [0.15, 0.15, 0.1, 0.1, 0.1, 0.1, 0.2] // Durations for each keyframe
-        
-        // Ensure keyframeRotations and keyframeDurations are of the same length
-        guard keyframeRotations.count == keyframeDurations.count else {
-            print("Keyframes mismatch: Check rotations and durations arrays")
-            return
-        }
-        
-        // Build the keyframe actions
-        var actions: [SKAction] = []
-        for (index, rotation) in keyframeRotations.enumerated() {
-            let duration = keyframeDurations[index]
-            let action = SKAction.rotate(toAngle: rotation, duration: duration, shortestUnitArc: true)
-            actions.append(action)
-        }
-        
-        // Create the keyframe animation
-        let waitAction = SKAction.wait(forDuration: 1.0)
-        actions.append(waitAction)
-        let keyframeSequence = SKAction.sequence(actions)
-        let repeatForever = SKAction.repeatForever(keyframeSequence)
-        hintButton.run(repeatForever)
-    }
-    
-    func showDictionary(for word: String) {
-        let userInfo = ["word": word]
-        NotificationCenter.default.post(name: .needsToShowDictionary, object: nil, userInfo: userInfo)
-    }
-    
-    func showDictionaryPopup() {
-        let popup = CustomDictionaryPopupNode(
-            title: "Guessed Words",
-            message: "Tap on word to see meainings in the dictionary",
-            guessedWords: guessedWords
-        ) { [weak self] didTapOnWord in
-            guard let self else { return }
-            showDictionary(for: didTapOnWord)
-        }
-        popup.zPosition = 100
-        addChild(popup)
-        popup.alpha = .zero
-        // Animate
-        popup.run(SKAction.fadeIn(withDuration: 0.3))
-    }
-    
-    func showExtraWordsListPopup() {
-        let popup = CustomDictionaryPopupNode(
-            title: "Extra Words",
-            message: "These are real words you guessed, but they’re not part of this level.",
-            guessedWords: guessedExtraWords
-        ) { [weak self] didTapOnWord in
-            guard let self else { return }
-            showDictionary(for: didTapOnWord)
-        }
-        popup.zPosition = 100
-        addChild(popup)
-        popup.alpha = .zero
-        // Animate
-        popup.run(SKAction.fadeIn(withDuration: 0.3))
-    }
-    
-    func showPopup(withTitle title: String, message: String, buttonTitle: String, completion: @escaping () -> Void) {
-        let popup = CustomPopupNode(
-            title: title,
-            message: message,
-            buttonTitle: buttonTitle,
-            buttonAction: { completion() }
-        )
-        popup.zPosition = 100
-        addChild(popup)
-        popup.alpha = .zero
-        // Animate
-        popup.run(SKAction.fadeIn(withDuration: 0.3))
-    }
     
     private func dismissGameScene() {
         NavigationManager.shared.returnToMenuScene()
     }
     
-    private func showPaywallScene() {
-        let overlay = PaywallOverlay(size: self.size)
-        overlay.zPosition = 10 // Ensure it appears on top of other nodes
-        overlay.name = "paywallOverlay"
-        addChild(overlay)
-        overlay.alpha = .zero
-        overlay.run(SKAction.fadeIn(withDuration: 0.3))
-    }
-    
-    private func shuffleLetters() {
+    internal func shuffleLetters() {
         // Step 1: Rotate all nodes around the circular path 2 times (fast and smooth, clockwise)
         let bottomCenter = CGPoint(x: size.width / 2, y: size.height * 0.25) // Circle center
         let availableWidth = size.width * 0.7 // Account for padding
@@ -568,65 +416,7 @@ class SwipeToSuggestWordScene: SKScene {
         }
     }
     
-    private func showHint() {
-        guard diamonds >= minRequiredDiamonds else {
-            showShortMessage(text: "you don't have enough diamonds, maybe you'll consider buying some.")
-            return
-        }
-        guard let firstEmptySlot = wordSlots.filter({ $0.text == "" }).first,
-              let slotName = firstEmptySlot.name
-        else {
-            print("No empty slot for hint.")
-            return
-        }
-        
-        // Validate slotName format using regex
-        let regex = try! NSRegularExpression(pattern: "^slotSquare_\\d+_\\d+$")
-        let range = NSRange(location: 0, length: slotName.utf16.count)
-        guard regex.firstMatch(in: slotName, options: [], range: range) != nil else {
-            print("Invalid slotName format: \(slotName)")
-            return
-        }
-
-        // Parse wordIndex and charIndex from the validated slotName
-        let cleanText = slotName.replacingOccurrences(of: "slotSquare_", with: "")
-        let components = cleanText.split(separator: "_")
-        guard components.count == 2,
-              let wordIndex = Int(components[0]),
-              let charIndex = Int(components[1]),
-              wordIndex < targetWords.count
-        else {
-            print("Failed to parse indices from slotName: \(slotName)")
-            return
-        }
-
-        let word = targetWords[wordIndex]
-        guard charIndex < word.count else {
-            print("Character index out of bounds for word: \(word)")
-            return
-        }
-        
-        let char = Array(word)[charIndex]
-        hintedLettersList.append(String(char))
-
-        if let label = childNode(withName: slotName) as? CustomLabelNode {
-            label.text = String(char) // Set the letter
-            label.labelNode.alpha = 0 // Start with alpha 0
-            label.labelNode.run(SKAction.fadeIn(withDuration: 0.3)) // Animate fade-in
-        }
-        
-        // Update diamonds and label
-        diamonds -= 1
-        diamondLabel.text = "\(diamonds)"
-        
-        // Add created word to guessed word list then check if level finished
-        let formedWord = hintedLettersList.joined()
-        if targetWords.contains(formedWord), !guessedWords.contains(formedWord) {
-            guessedWords.insert(formedWord)
-            hintedLettersList = []
-            runNextLevelIfNeeded()
-        }
-    }
+    // MARK: - Save & Load game state
 
     private func saveGameData() {
         let state = SwipeGameState(
@@ -693,6 +483,7 @@ class SwipeToSuggestWordScene: SKScene {
         currentLevel = 1
         // Load the level layout
         guessedWords = []
+        guessedExtraWords = []
         hintedLettersList = []
         wordSlots = []
         letterNodes = []
@@ -702,7 +493,13 @@ class SwipeToSuggestWordScene: SKScene {
         loadLevel(currentLevel)
     }
     
-    private func connectLinesIfNeeded(currentLocation location: CGPoint) {
+    @objc func updateGameStateInDatabase() {
+        saveGameData()
+    }
+    
+    // MARK: - Swiping line codes
+    
+    private func connectSwipeLinesIfNeeded(currentLocation location: CGPoint) {
         // Update the line path
         let points = currentLetterPath.map { $0.center } // Get the center of each letter node
         // Ensure the points array has at least one point
@@ -724,6 +521,25 @@ class SwipeToSuggestWordScene: SKScene {
         }
     }
     
+    private func resetSwipeLinePath() {
+        let changeColor = SKAction.customAction(withDuration: 0.3) { [weak self] _, _ in
+            guard let self else { return }
+            swipeLine.strokeColor = swipeLineColor
+        }
+        let resetColor = SKAction.customAction(withDuration: 0.3) { [weak self] _, _ in
+            guard let self else { return }
+            swipeLine.strokeColor = .white
+            swipeLine.path = nil // Optionally clear the line when touch ends
+        }
+        let animation = SKAction.sequence([changeColor, resetColor])
+        swipeLine.run(animation)
+        currentLinePath = CGMutablePath() // Reset for the next line
+        lastTouchLocation = nil // Reset the last touch location
+    }
+    
+    // MARK: - Letter slots code
+    
+    // Fill top part of slots by given word
     private func fillWordSlot(_ word: String) {
         guard let wordIndex = targetWords.firstIndex(of: word) else { return }
         
@@ -752,9 +568,38 @@ class SwipeToSuggestWordScene: SKScene {
         }
     }
     
+    // Remove bottom letters from the scene (animated)
+    private func removeLetterNodes(completion: (() -> Void)? = nil) {
+        for (index, node) in letterNodes.enumerated() {
+            let fadeOutAction = SKAction.fadeOut(withDuration: 0.3)
+            let shrinkAction = SKAction.scale(to: .zero, duration: 0.3)
+            let shrinkGroup = SKAction.group([fadeOutAction, shrinkAction])
+            
+            // Add a delay based on the character index for ordered animation
+            let delay = SKAction.wait(forDuration: Double(index) * 0.1)
+            // Sequence the delay and scale-up actions
+            let sequence = SKAction.sequence([delay, shrinkGroup])
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.1) { [weak self] in
+                guard let self else { return }
+                animateStarShine(onNode: node, forDuration: 0.4)
+            }
+            node.run(sequence) {
+                completion?()
+            }
+        }
+    }
+    // Reset bottom letters with animation
+    private func resetInteractedLetters() {
+        currentLetterPath.forEach {
+            $0.run(SKAction.scale(to: 1.0, duration: 0.3))
+        }
+        currentLetterPath = []
+    }
+    
     // MARK: - Game State Checkers
     
-    private func checkWordIsFoundNowOrAlreadyFounded() {
+    // Collect all swiped letters and create a word if it's possible
+    private func checkFormedWordState() {
         // Create a word from letter path
         let formedWord = currentLetterPath.map { $0.text! }.joined()
         var labelColor: UIColor = .black
@@ -772,8 +617,18 @@ class SwipeToSuggestWordScene: SKScene {
         } else if extraWords.contains(formedWord), !guessedExtraWords.contains(formedWord) {
             guessedExtraWords.insert(formedWord)
             showShortMessage(text: "Well done, you got 1 diamond.")
-            diamonds += 1
-            diamondLabel.text = "\(diamonds)"
+            // Animate diamond move
+            animateDiamondMove(fromNode: swipingTextDisplayLabel, toNode: diamondButton, duration: 2.0) { [weak self] in
+                guard let self else { return }
+                diamonds += 1
+                diamondLabel.text = "\(diamonds)"
+                let growAction = SKAction.scale(to: 1.3, duration: 0.3)
+                let shrinkAction = SKAction.scale(to: 1.0, duration: 0.3)
+                let actionSequence = SKAction.sequence([growAction, shrinkAction])
+                actionSequence.timingMode = .easeInEaseOut
+                diamondLabel.run(actionSequence)
+            }
+            
             labelColor = .yellow
         } else {
             labelColor = .red
@@ -784,48 +639,90 @@ class SwipeToSuggestWordScene: SKScene {
         swipingTextDisplayLabel.run(SKAction.fadeOut(withDuration: 0.3)) { [weak self] in
             guard let self else { return }
             swipingTextDisplayLabel.text = ""
-            swipingTextDisplayLabel.backgroundColor = .black
+            swipingTextDisplayLabel.backgroundColor = .appBlue
         }
+        
+        // Show banner ribbon for longest word
+        if isWordFound, formedWord == longestWordInCurrentLevel {
+            showBannerRibbon()
+        }
+        
+        // Change swipeLine color to animate
+        swipeLineColor = labelColor
     }
     
-    private func resetInteractedLetters() {
-        currentLetterPath.forEach {
-            $0.fontColor = .white
-            $0.run(SKAction.scale(to: 1.0, duration: 0.3))
-        }
-        currentLetterPath = []
-    }
+    // MARK: - Load and unload level code
     
-    private func resetSwipeLinePath() {
-        let changeColor = SKAction.customAction(withDuration: 0.3) { [weak self] _, _ in
-            guard let self else { return }
-            swipeLine.strokeColor = isWordFound ? .green : .red
-        }
-        let resetColor = SKAction.customAction(withDuration: 0.3) { [weak self] _, _ in
-            guard let self else { return }
-            swipeLine.strokeColor = .white
-            swipeLine.path = nil // Optionally clear the line when touch ends
-        }
-        let animation = SKAction.sequence([changeColor, resetColor])
-        swipeLine.run(animation)
-        currentLinePath = CGMutablePath() // Reset for the next line
-        lastTouchLocation = nil // Reset the last touch location
-    }
-    
-    private func runNextLevelIfNeeded() {
-        if guessedWords.count == targetWords.count {
+    internal func loadLevel(_ level: Int, fromDB: Bool = false) {
+        guard levelsManger.isValidLevel(index: level - 1) else {
             showPopup(
-                withTitle: "Level Complete!",
-                message: "Great job! Get ready for the next level.",
-                buttonTitle: "Continue",
-                completion: { [weak self] in
-                    guard let self else { return }
-                    // Remove all child nodes
-                    self.removeAllChildren()
-                    currentLevel += 1
-                    loadLevel(currentLevel)
-                }
+                withTitle: "Error",
+                message: "Invalid level. Please restart the game.",
+                buttonTitle: "Dismiss",
+                completion: { [weak self] in self?.dismissGameScene() }
             )
+            return
+        }
+        
+        let levelData = levelsManger.getLevel(forIndex: level - 1)
+        // If loading from the scratch release all old data
+        if !fromDB {
+            extraWords = []
+            guessedExtraWords = []
+            guessedWords = []
+            hintedLettersList = []
+            targetWords = []
+            letterPool = ""
+            longestWordInCurrentLevel = ""
+            wordSlots.removeAll()
+            letterNodes.removeAll()
+            currentLetterPath.removeAll()
+        }
+        
+        targetWords = levelData.targetWords
+        extraWords = Set(levelData.extraWords)
+        letterPool = levelData.letters
+        longestWordInCurrentLevel = targetWords.max(by: { $0.count < $1.count }) ?? targetWords.first ?? ""
+        
+        configureBackground()
+        configureDiamondLabel()
+        configureTitleLabel()
+        setupCloseButton()
+        setupWordSlots()
+        setupLetterNodes()
+        configureSwipeLine()
+        setupHintButton()
+        setupShuffleButton()
+        setupDictionaryButton()
+        setupExtraWordsButton()
+        configureSwipingTextDisplayLabel()
+        configureBannerRibbon()
+    }
+    
+    internal func runNextLevelIfNeeded() {
+        // Chek all word found
+        if guessedWords.count == targetWords.count {
+            // Show ribbon and then popup
+            showBannerRibbon(withText: "GREAT!") { [weak self] in
+                guard let self else { return }
+                // Remove letters
+                removeLetterNodes() {[weak self] in
+                    guard let self else { return }
+                    // Show popup
+                    showPopup(
+                        withTitle: "Level Complete!",
+                        message: "Great job! Get ready for the next level.",
+                        buttonTitle: "Continue",
+                        completion: { [weak self] in
+                            guard let self else { return }
+                            // Remove all child nodes
+                            self.removeAllChildren()
+                            currentLevel += 1
+                            loadLevel(currentLevel)
+                        }
+                    )
+                }
+            }
         }
     }
     
@@ -874,7 +771,6 @@ class SwipeToSuggestWordScene: SKScene {
                 currentLetterPath.append(letterNode)
                 // Apply a scale and highlight effect on the selected letter
                 letterNode.run(SKAction.scale(to: 1.2, duration: 0.1))
-                letterNode.fontColor = .yellow
                 // Show letters in label
                 swipingTextDisplayLabel.alpha = 1.0
                 swipingTextDisplayLabel.text = currentLetterPath.map { $0.text! }.joined()
@@ -882,13 +778,13 @@ class SwipeToSuggestWordScene: SKScene {
         }
         
         // Draw lines
-        connectLinesIfNeeded(currentLocation: location)
+        connectSwipeLinesIfNeeded(currentLocation: location)
     }
 
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         // If already founded show message else add it to guesses words
-        checkWordIsFoundNowOrAlreadyFounded()
+        checkFormedWordState()
         // Remove drawn line
         resetSwipeLinePath()
         // Reset letter nodes to original color and scale

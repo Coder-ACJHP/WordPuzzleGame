@@ -93,7 +93,7 @@ class CustomDictionaryPopupNode: SKNode {
         
         // Dismiss Button
         let button = SKShapeNode(rectOf: CGSize(width: 100, height: 40), cornerRadius: 10)
-        button.fillColor = .red
+        button.fillColor = .appDarkerBlue
         button.strokeColor = .clear
         button.position = CGPoint(x: titleLabel.position.x, y: screenSize.height - (containerNode.frame.maxY - 40))
         button.name = "dismissButton_animatable"
