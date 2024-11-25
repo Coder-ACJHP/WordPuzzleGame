@@ -10,6 +10,8 @@ import SpriteKit
 
 class MenuScene: SKScene {
     
+    private var isMuted: Bool = false
+    
     override func didMove(to view: SKView) {
         setupBackground()
         setupTitle()
@@ -17,25 +19,22 @@ class MenuScene: SKScene {
     }
     
     private func setupBackground() {
-        // Add a gradient background
-        let tx = SKTexture(image: UIImage(resource: .menuBackground))
-        let background = SKSpriteNode(texture: tx)
-        background.aspectFillToSize(fillSize: frame.size)
+        let gradientTexture = SKTexture(
+            vectorNoiseWithSmoothness: 1.0,
+            size: CGSize(
+                width: frame.width / 4,
+                height: frame.height / 4
+            )
+        )
+        let background = SKSpriteNode(texture: gradientTexture)
         background.position = CGPoint(x: frame.midX, y: frame.midY)
+        background.size = frame.size
         background.zPosition = -1
         background.name = "backgroundNode"
         addChild(background)
         
-        // Add floating particles
-        let particleEmitter = SKEmitterNode(fileNamed: "BokehParticle.sks")
-        particleEmitter?.position = CGPoint(x: frame.midX, y: frame.midY)
-        particleEmitter?.zPosition = 0
-        particleEmitter?.advanceSimulationTime(10) // Makes the particles look pre-populated
-        particleEmitter?.isUserInteractionEnabled = false
-        particleEmitter?.name = "particleEmitter"
-        if let emitter = particleEmitter {
-            addChild(emitter)
-        }
+        // Add floating letter particles
+        createAlphabetParticleEmitter()
     }
     
     private func setupTitle() {
@@ -75,73 +74,61 @@ class MenuScene: SKScene {
     }
     
     private func setupButtons() {
-        // Button 1: Swipe to Suggest Word
-        let swipeButton = createButton(
-            withText: "Swipe to Suggest Word",
-            position: CGPoint(
-                x: frame.midX,
-                y: 150
-            )
+        
+        let padding = CGFloat(45)
+        
+        // Button 1: Settings
+        let settingsButton = AnimatableButton(
+            withIcon: .settings,
+            named: "settingsButton",
+            position: CGPoint(x: padding, y: size.height - 65),
+            size: CGSize(width: 50, height: 50)
         )
-        swipeButton.name = "SwipeGame"
+        settingsButton.zPosition = 1000
+        addChild(settingsButton)
+        settingsButton.touchUpInside = {
+            print("Settings button pressed")
+        }
+        
+        // Button 2: Mute
+        let muteButton = AnimatableButton(
+            defaultStateIcon: .mute,
+            selectedStateIcon: .unMute,
+            named: "muteButton",
+            position: CGPoint(x: size.width - padding, y: size.height - 65),
+            size: CGSize(width: 50, height: 50)
+        )
+        muteButton.zPosition = 1000
+        addChild(muteButton)
+        muteButton.touchUpInside = { [weak self] in
+            guard let self else { return }
+            muteButton.updateIcon(isSelected: isMuted)
+            isMuted.toggle()
+        }
+        
+        // Button 3: Swipe to Suggest Word
+        let swipeButton = AnimatableButton(
+            withText: "Swipe to Suggest Word",
+            named: "SwipeGame",
+            position: CGPoint(x: frame.midX, y: 150),
+            size: CGSize(width: size.width - padding, height: 55)
+        )
         swipeButton.zPosition = 1000
         addChild(swipeButton)
-        
-        // Button 2: Fill in the Blank
-        let fillBlankButton = createButton(
-            withText: "Fill in the Blank",
-            position: CGPoint(
-                x: frame.midX,
-                y: 70
-            )
-        )
-        fillBlankButton.name = "FillGame"
-        swipeButton.zPosition = 1000
-        addChild(fillBlankButton)
-    }
-    
-    private func createButton(withText text: String, position: CGPoint) -> SKSpriteNode {
-        let button = SKSpriteNode(color: .clear, size: CGSize(width: 300, height: 60))
-        button.position = position
-        button.name = text
-        button.zPosition = 1
-        
-        // Background with rounded corners
-        let bg = SKShapeNode(rectOf: CGSize(width: 300, height: 60), cornerRadius: 15)
-        bg.fillColor = #colorLiteral(red: 0, green: 0.2626195336, blue: 0.3218821875, alpha: 1)
-        bg.strokeColor = .clear
-        bg.zPosition = -1
-        button.addChild(bg)
-        
-        // Label
-        let label = SKLabelNode(fontNamed: "AvenirNext-DemiBold")
-        label.text = text
-        label.fontSize = 20
-        label.fontColor = .white
-        label.position = CGPoint(x: 0, y: -8)
-        label.zPosition = 2
-        button.addChild(label)
-        
-        // Add hover animation
-        let scaleUp = SKAction.scale(to: 1.1, duration: 0.6)
-        let scaleDown = SKAction.scale(to: 1.0, duration: 0.6)
-        let hoverSequence = SKAction.sequence([scaleUp, scaleDown])
-        let action = SKAction.repeat(hoverSequence, count: 5)
-        action.timingMode = .easeInEaseOut
-        button.run(action, withKey: "hover")
-        
-        return button
-    }
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        let location = touch.location(in: self)
-        let touchedNode = atPoint(location)
-        
-        let name = touchedNode.name ?? touchedNode.parent?.name ?? ""
-        if name == "SwipeGame" {
+        swipeButton.touchUpInside = {
             NavigationManager.shared.navigateToSwipeGameScene()
-        } else if name == "FillGame" {
+        }
+        
+        // Button 4: Fill in the Blank
+        let fillBlankButton = AnimatableButton(
+            withText: "Fill in the Blank",
+            named: "FillGame",
+            position: CGPoint(x: frame.midX, y: 70),
+            size: CGSize(width: size.width - padding, height: 55)
+        )
+        fillBlankButton.zPosition = 1000
+        addChild(fillBlankButton)
+        fillBlankButton.touchUpInside = {
             NavigationManager.shared.navigateToFillGameScene()
         }
     }

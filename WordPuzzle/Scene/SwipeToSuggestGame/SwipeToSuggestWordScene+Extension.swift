@@ -79,6 +79,25 @@ extension SwipeToSuggestWordScene {
         hintButton.run(repeatForever)
     }
     
+    func flipNodeHorizontally3D(_ node: SKSpriteNode, duration: TimeInterval) {
+        let halfDuration = duration / 2
+
+        let oldScale = node.xScale
+        // First half of the flip - scale down to zero width
+        let scaleDown = SKAction.scaleX(to: 0.0, duration: halfDuration)
+        scaleDown.timingMode = .easeIn
+
+        // Second half of the flip - scale back to original size
+        let scaleUp = SKAction.scaleX(to: oldScale, duration: halfDuration)
+        scaleUp.timingMode = .easeOut
+
+        // Combine both actions into a sequence
+        let waitAction = SKAction.wait(forDuration: 3.0)
+        let flipSequence = SKAction.sequence([scaleDown, scaleUp, waitAction])
+
+        node.run(SKAction.repeatForever(flipSequence))
+    }
+    
     internal func showDictionary(for word: String) {
         let userInfo = ["word": word]
         NotificationCenter.default.post(name: .needsToShowDictionary, object: nil, userInfo: userInfo)

@@ -11,18 +11,19 @@ import SpriteKit
 class SwipeToSuggestWordScene: SKScene {
     // UI Elements
     internal var wordSlots: [CustomLabelNode] = [] // Slots for the target words
+    internal var lastFakeWordSlot: CustomLabelNode!
     internal var letterNodes: [CustomLabelNode] = [] // Letters at the bottom
     internal var currentLetterPath: [CustomLabelNode] = [] // Tracks the user's current swipe path
     internal var swipingTextDisplayLabel: CustomLabelNode!
     internal var bannerRibbon: BannerRibbonNode!
-    internal var closeButton: SKSpriteNode!
+    internal var closeButton: AnimatableButton!
     internal var titleLabel: SKLabelNode!
     internal var diamondButton: SKSpriteNode!
     internal var diamondLabel: SKLabelNode!
-    internal var dictionaryButton: SKSpriteNode!
-    internal var extraWordsButton: SKSpriteNode!
-    internal var shuffleButton: SKSpriteNode!
-    internal var hintButton: SKSpriteNode!
+    internal var dictionaryButton: AnimatableButton!
+    internal var extraWordsButton: AnimatableButton!
+    internal var shuffleButton: AnimatableButton!
+    internal var hintButton: AnimatableButton!
     
     internal var lastTouchLocation: CGPoint?
     internal var currentLinePath: CGMutablePath!
@@ -45,8 +46,10 @@ class SwipeToSuggestWordScene: SKScene {
     // Diamond count for each hint changes based on levels
     internal var minRequiredDiamonds: Int = .zero
     internal var diamonds: Int = .zero
-    internal let rowCount = 6
+    internal let rowCount = 7
     internal let columnCount = 7
+    internal let padding = CGFloat(45)
+    internal let buttonSize = CGSize(width: 50, height: 50)
     internal let levelsManger = SwipeGameLevelManager.shared
     // Game state update variables
     internal let notificationCenter = NotificationCenter.default
@@ -116,13 +119,15 @@ class SwipeToSuggestWordScene: SKScene {
     }
     
     private func configureDiamondLabel() {
-        let texture = SKTexture(image: UIImage(resource: .suitDiamond))
-        diamondButton = SKSpriteNode(texture: texture)
+        let texture = SKTexture(image: UIImage(resource: .diamond))
+        diamondButton = SKSpriteNode(texture: texture, size: CGSize(width: 30, height: 30))
         diamondButton.name = "diamondButton"
-        diamondButton.position = CGPoint(x: 30, y: size.height - 55)
-        diamondButton.setScale(0.7)
+        diamondButton.position = CGPoint(x: padding, y: size.height - 65)
+        diamondButton.aspectFitToSize(fitSize: diamondButton.frame.size)
         // Add the diamond button to the scene
         addChild(diamondButton)
+        
+        flipNodeHorizontally3D(diamondButton, duration: 1.0)
         
         diamondLabel = SKLabelNode(text: "\(diamonds)")
         diamondLabel.fontName = "AvenirNext-Bold"
@@ -137,14 +142,21 @@ class SwipeToSuggestWordScene: SKScene {
     
     private func setupCloseButton() {
         // Create "X" button
-        let texture = SKTexture(image: UIImage(resource: .xCircle))
-        closeButton = SKSpriteNode(texture: texture)
-        closeButton.setScale(0.7)
-        closeButton.position = CGPoint(x: size.width - 30, y: size.height - 55)
-        closeButton.name = "closeButton"
-        
+        closeButton = AnimatableButton(
+            withIcon: .xmark,
+            named: "closeButton",
+            position: CGPoint(x: size.width - (padding - 5), y: size.height - 65),
+            size: CGSize(width: 35, height: 35),
+            cornerRadius: 8
+        )
         // Add the close button to the scene
         addChild(closeButton)
+        closeButton.zPosition = 1
+        closeButton.touchUpInside = { [weak self] in
+            guard let self else { return }
+            saveGameData()
+            dismissGameScene()
+        }
     }
     
     private func configureTitleLabel() {
@@ -153,67 +165,131 @@ class SwipeToSuggestWordScene: SKScene {
         titleLabel.fontSize = 20
         titleLabel.fontColor = .white
         titleLabel.verticalAlignmentMode = .center
-        titleLabel.position = CGPoint(x: size.width / 2, y: size.height - 55)
+        titleLabel.position = CGPoint(x: size.width / 2, y: size.height - 65)
         // Add the close button to the scene
         addChild(titleLabel)
     }
     
-    private func setupShuffleButton() {
-        let texture = SKTexture(image: UIImage(resource: .shuffle))
-        shuffleButton = SKSpriteNode(texture: texture)
-        shuffleButton.position = CGPoint(x: size.width - 40, y: 40)
-        shuffleButton.name = "shuffleButton"
-        shuffleButton.setScale(0.7)
+    private func setupWordSlots() {
+        let topMargin = closeButton.frame.minY - 30
+        let spacing: CGFloat = 10 // Spacing between squares
+        let availableWidth = self.size.width - ((spacing * 6) + padding)
+        let squareSize: CGFloat = availableWidth / CGFloat(columnCount) // Size of each rounded square
+        let wordSpacing = squareSize + spacing // Spacing between words
+        let posiX = padding - 2.5
         
-        // Add the shuffle button to the scene
-        addChild(shuffleButton)
+        // Slot pathes
+        for index in 0 ..< rowCount {
+            // Calculate the starting position to center the word
+            let yPosition = topMargin - CGFloat(index) * wordSpacing
+            
+            for charIndex in 0 ..< columnCount {
+                
+                let label = CustomLabelNode(
+                    text: "",
+                    fontSize: 35,
+                    fontColor: .white,
+                    backgroundColor: #colorLiteral(red: 0, green: 0.3285208941, blue: 0.5748849511, alpha: 0.08979201159),
+                    borderColor: #colorLiteral(red: 0, green: 0.3285208941, blue: 0.5748849511, alpha: 0.08979201159),
+                    cornerRadius: 8
+                )
+                label.position = CGPoint(x: posiX + CGFloat(charIndex) * (squareSize + spacing), y: yPosition)
+                // Add the square to the scene
+                addChild(label)
+                lastFakeWordSlot = label
+            }
+        }
+        
+        // Real slots
+        
+        for (wordIndex, word) in targetWords.enumerated() {
+            // Calculate the starting position to center the word
+            let yPosition = topMargin - CGFloat(wordIndex) * wordSpacing
+            
+            for (charIndex, _) in word.enumerated() {
+                let label = CustomLabelNode(
+                    text: "",
+                    fontSize: 32,
+                    fontColor: .white,
+                    fontName: "AvenirNext-DemiBold",
+                    backgroundColor: .appBlue,
+                    borderColor: .appBlue,
+                    cornerRadius: 8
+                )
+                label.position = CGPoint(x: posiX + CGFloat(charIndex) * (squareSize + spacing), y: yPosition)
+                label.name = "slotSquare_\(wordIndex)_\(charIndex)" // Unique name for the square
+                // Add the square to the scene
+                addChild(label)
+                wordSlots.append(label)
+            }
+        }
     }
     
     private func setupDictionaryButton() {
+        let posiY = lastFakeWordSlot.frame.minY - 60
         
-        let topMargin: CGFloat = size.height - 110 // Position the word slots near the top
-        let spacing: CGFloat = 10 // Spacing between squares
-        let availableWidth = self.size.width - (spacing * 9)
-        let squareSize: CGFloat = availableWidth / CGFloat(columnCount) // Size of each rounded square
-        let wordSpacing = squareSize + spacing // Spacing between words
-        let posiX = spacing * 4
-        let posiY = (topMargin - CGFloat(rowCount) * wordSpacing) - 10
-            
-            
-        let texture = SKTexture(image: UIImage(resource: .dictionary))
-        dictionaryButton = SKSpriteNode(texture: texture)
-        dictionaryButton.position = CGPoint(x: posiX, y: posiY)
-        dictionaryButton.name = "dictionaryButton"
-        
-        // Add the shuffle button to the scene
+        dictionaryButton = AnimatableButton(
+            withIcon: .dictionary,
+            named: "dictionaryButton",
+            position: CGPoint(x: 45, y: posiY),
+            size: buttonSize
+        )
+        dictionaryButton.zPosition = 1
         addChild(dictionaryButton)
+        dictionaryButton.touchUpInside = { [weak self] in
+            guard let self else { return }
+            showDictionaryPopup()
+        }
     }    
     
     private func setupExtraWordsButton() {
-        let posiX = size.width - 30
+        let posiX = size.width - 45
         let posiY = dictionaryButton.position.y
             
-        let texture = SKTexture(image: UIImage(resource: .list))
-        extraWordsButton = SKSpriteNode(texture: texture)
-        extraWordsButton.position = CGPoint(x: posiX, y: posiY)
-        extraWordsButton.name = "notIncludedButton"
-        extraWordsButton.setScale(0.9)
-        
-        // Add the shuffle button to the scene
+        extraWordsButton = AnimatableButton(
+            withIcon: .extraWord,
+            named: "notIncludedButton",
+            position: CGPoint(x: posiX, y: posiY),
+            size: buttonSize
+        )
+        extraWordsButton.zPosition = 1
         addChild(extraWordsButton)
+        extraWordsButton.touchUpInside = { [weak self] in
+            guard let self else { return }
+            showExtraWordsListPopup()
+        }
     }
     
     private func setupHintButton() {
-        let texture = SKTexture(image: UIImage(resource: .hint))
-        hintButton = SKSpriteNode(texture: texture)
-        hintButton.position = CGPoint(x: 40, y: 40)
-        hintButton.name = "hintButton"
-        hintButton.setScale(0.7)
-        
-        // Add the shuffle button to the scene
+        hintButton = AnimatableButton(
+            withIcon: .hint,
+            named: "hintButton",
+            position: CGPoint(x: 45, y: 55),
+            size: buttonSize
+        )
+        hintButton.zPosition = 1
         addChild(hintButton)
+        hintButton.touchUpInside = { [weak self] in
+            guard let self else { return }
+            showHint()
+        }
         
         shakeHintButtonForever()
+    }
+    
+    private func setupShuffleButton() {
+        shuffleButton = AnimatableButton(
+            withIcon: .shuffle,
+            named: "shuffleButton",
+            position: CGPoint(x: size.width - 45, y: 55),
+            size: buttonSize
+        )
+        // Add the close button to the scene
+        addChild(shuffleButton)
+        shuffleButton.touchUpInside = { [weak self] in
+            guard let self else { return }
+            shuffleLetters()
+        }
     }
     
     private func configureSwipingTextDisplayLabel() {
@@ -241,62 +317,6 @@ class SwipeToSuggestWordScene: SKScene {
         addChild(bannerRibbon)
         // Hide with scale by default
         bannerRibbon.setScale(.zero)
-    }
-    
-    private func setupWordSlots() {
-        let topMargin: CGFloat = size.height - 110 // Position the word slots near the top
-        let spacing: CGFloat = 10 // Spacing between squares
-        let availableWidth = self.size.width - (spacing * 9)
-        let squareSize: CGFloat = availableWidth / CGFloat(columnCount) // Size of each rounded square
-        let wordSpacing = squareSize + spacing // Spacing between words
-        
-        // Slot pathes
-        for index in 0 ..< rowCount {
-            // Calculate the starting position to center the word
-            let startX = spacing * 4
-            let yPosition = topMargin - CGFloat(index) * wordSpacing
-            
-            for charIndex in 0 ..< columnCount {
-                
-                let label = CustomLabelNode(
-                    text: "",
-                    fontSize: 35,
-                    fontColor: .white,
-                    backgroundColor: #colorLiteral(red: 0, green: 0.3285208941, blue: 0.5748849511, alpha: 0.08979201159),
-                    borderColor: #colorLiteral(red: 0, green: 0.3285208941, blue: 0.5748849511, alpha: 0.08979201159),
-                    cornerRadius: 8
-                )
-                label.position = CGPoint(x: startX + CGFloat(charIndex) * (squareSize + spacing), y: yPosition)
-                // Add the square to the scene
-                addChild(label)
-            }
-        }
-        
-        // Real slots
-        
-        for (wordIndex, word) in targetWords.enumerated() {
-            // Calculate the starting position to center the word
-            let startX = spacing * 4
-            let yPosition = topMargin - CGFloat(wordIndex) * wordSpacing
-            
-            for (charIndex, _) in word.enumerated() {
-                
-                let label = CustomLabelNode(
-                    text: "",
-                    fontSize: 32,
-                    fontColor: .white,
-                    fontName: "AvenirNext-DemiBold",
-                    backgroundColor: .appBlue,
-                    borderColor: .appBlue,
-                    cornerRadius: 8
-                )
-                label.position = CGPoint(x: startX + CGFloat(charIndex) * (squareSize + spacing), y: yPosition)
-                label.name = "slotSquare_\(wordIndex)_\(charIndex)" // Unique name for the square
-                // Add the square to the scene
-                addChild(label)
-                wordSlots.append(label)
-            }
-        }
     }
     
     private func setupLetterNodes() {

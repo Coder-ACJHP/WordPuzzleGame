@@ -14,9 +14,10 @@ class SwipeGameLevelManager {
     private init() {} // Prevent direct instantiation
     
     private let levels: [SwipeGameLevel] = [
+        SwipeGameLevel(targetWords: ["ORT", "MORT", "STORM", "MOST", "SORT", "MORTAL", "MORTALE"], letters: "STORMALE", extraWords: ["STORMAL", "TORS", "ROST"]),
+        SwipeGameLevel(targetWords: ["IT", "HE", "OAT", "BAR"], letters: "HITOAEBR", extraWords: ["BRA", "HAT"]),
         SwipeGameLevel(targetWords: ["BEAR", "EAR", "ARE", "BAR"], letters: "BEAR", extraWords: ["BRA", "REB"]),
         SwipeGameLevel(targetWords: ["CHAIR", "AIR", "ARC", "CHAR"], letters: "CHAIR", extraWords: ["RICH", "RAH"]),
-        SwipeGameLevel(targetWords: ["STORM", "MOST", "SORT", "MORT"], letters: "STORM", extraWords: ["TORS", "ROST"]),
         SwipeGameLevel(targetWords: ["PLANE", "PLAN", "LEAP", "PANEL"], letters: "PLANE", extraWords: ["PEAL", "LEAN"]),
         SwipeGameLevel(targetWords: ["SMART", "ART", "RATS", "STAR"], letters: "SMART", extraWords: ["MARS", "TARS"]),
         SwipeGameLevel(targetWords: ["CLOUD", "COULD", "LOUD", "DUO"], letters: "CLOUD", extraWords: ["CLOD", "OLD"]),
@@ -85,7 +86,7 @@ class SwipeGameLevelManager {
         // Step 1: Calculate required letter counts using targetWords
         var maxLetterCounts: [Character: Int] = [:]
         
-        for word in level.targetWords {
+        for word in level.targetWords.reversed() {
             // Calculate frequency of each letter for the current word
             var wordLetterCounts: [Character: Int] = [:]
             for letter in word {

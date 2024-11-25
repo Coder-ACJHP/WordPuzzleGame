@@ -55,7 +55,7 @@ class FillInTheBlankScene: SKScene {
     
     private func setupCloseButton() {
         // Create "X" button
-        let texture = SKTexture(image: UIImage(resource: .xCircle))
+        let texture = SKTexture(image: UIImage(resource: .xmark))
         closeButton = SKSpriteNode(texture: texture)
         closeButton.setScale(1.2)
         closeButton.position = CGPoint(x: size.width - 30, y: size.height - 55)
